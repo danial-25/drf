@@ -15,7 +15,12 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path
-
+from django.urls import include, path
+from rest_framework import routers
+from django.conf import settings
+from django.conf.urls.static import static
 urlpatterns = [
     path('admin/', admin.site.urls),
-]
+    path('products/', include('products.urls'), name='products-detail'),
+    path('api-auth/', include('rest_framework.urls')),
+]+ static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
