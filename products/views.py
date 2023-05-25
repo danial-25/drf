@@ -9,7 +9,7 @@ from .models import products
 from django.core.serializers import serialize   
 from .serializers import productsSerializer
 from django.shortcuts import get_object_or_404
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated,IsAuthenticatedOrReadOnly
 from rest_framework.decorators import api_view, renderer_classes,permission_classes
 from rest_framework.renderers import JSONRenderer, TemplateHTMLRenderer
 from rest_framework.reverse import reverse,reverse_lazy
@@ -25,14 +25,14 @@ from rest_framework.reverse import reverse,reverse_lazy
 
 
 @api_view()
-@permission_classes([IsAuthenticated])
+@permission_classes([IsAuthenticatedOrReadOnly])
 def list(request, category):
     queryset=products.objects.all().filter(category=category)
     serializer = productsSerializer(queryset, many=True, context={'request': request})
     # api_root=reverse_lazy('products-detail', request=request)    
     return Response(serializer.data)
 @api_view()
-@permission_classes([IsAuthenticated])
+@permission_classes([IsAuthenticatedOrReadOnly])
 def single(request, category,id):
     if(products.objects.filter(category=category).exists()):
         queryset=products.objects.get(id=id)

@@ -7,6 +7,6 @@ class products(models.Model):
     shop=models.CharField(max_length=256)
     category=models.CharField(max_length=256)
     pid=models.CharField(max_length=256)
-    image=models.ImageField(upload_to='images/')
+    image=models.ImageField(upload_to='images/', default='image_223536416.jpg')
     def __str__(self):
         return self.title

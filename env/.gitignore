@@ -1,0 +1,27 @@
+# Virtual Environment
+env/
+venv/
+env/
+
+# Python
+*.pyc
+*.pyo
+__pycache__/
+
+# Pipenv
+Pipfile.lock
+
+# Poetry
+poetry.lock
+
+# pyenv
+.python-version
+
+# IDEs and Editors
+.idea/
+.vscode/
+*.swp
+*.swo
+*.pyc
+*.pyo
+*.orig
