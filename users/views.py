@@ -67,35 +67,41 @@ class DataAPIView(APIView):
 @permission_classes([AllowAny])
 @authentication_classes([TokenAuthentication])
 def add_item(request):
-    quantity=request.data.get('quantity')
-    product_id=request.data.get('pid')
+    quantity = request.data.get('quantity')
+    product_id = request.data.get('pid')
     
-    User=get_user_model()
+    User = get_user_model()
     user = User.objects.get(id=request.user.id)
-    user.cart=cart()
-    user.cart.save()
-    user.cart.picked_products.set(products.objects.filter(id=product_id))#it creates new value, and it should add up to already existing value, also it shouldn't create new object if id is 
-    user.cart.quantity+=int(quantity)#it creates new value, and it should add up to already existing value
-    user.cart.save()
-    user.save()
-    use=UserSerializer(user)
-    if use is not None:
-        temp = use.data['cart']
-        picked_products = products.objects.filter(id=temp['id'])
-
-        # Calculate the total price
-        total_price = 0
-        for product in picked_products:
-            value_without_comma = product.price.replace(',', '') 
-            value_without_comma=product.price.replace('.00','')
-            numeric_value = ''.join(filter(str.isdigit, value_without_comma))  
-            price = int(numeric_value) 
-            total_price += price
-
-        user.cart.total_price += total_price#it creates new value, and it should add up to already existing value
-        user.cart.save()
+    
+    if user.cart:
+        obj=user.cart
+    else:
+        obj = cart()
+        obj.save()
+        user.cart = obj  # Assign the cart object directly to the user's cart field
         user.save()
+    if(obj.picked_products.filter(id=product_id) is None):
+        obj.picked_products.add(products.objects.get(id=product_id))
+    obj.quantity += int(quantity)
+    obj.save()
+    
+
+    
+    # Calculate the total price
+    picked_products = obj.picked_products.all()
+    total_price = 0
+    for product in picked_products:
+        value_without_comma = product.price.replace(',', '') 
+        value_without_comma = value_without_comma.replace('.00', '')
+        numeric_value = ''.join(filter(str.isdigit, value_without_comma))  
+        price = int(numeric_value) 
+        total_price += price
+    
+    obj.total_price += total_price
+    obj.save()
+
     return Response(status=200)
+
 
 # def add_item(request):
 #     quantity=request.data.get('quantity')
