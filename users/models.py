@@ -8,7 +8,4 @@ class cart(models.Model):
     quantity=models.IntegerField(default=0)
 
 class CustomUser(AbstractUser):
-    cart=models.ForeignKey(cart, on_delete=models.CASCADE, null=True, blank=True)
-# class Profile(models.Model):
-#     user = models.OneToOneField(User, on_delete=models.CASCADE)
-#     cart=models.ForeignKey(cart, on_delete=models.CASCADE)
+    cart=models.OneToOneField(cart, on_delete=models.SET_NULL, null=True, blank=True)
