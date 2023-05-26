@@ -80,7 +80,7 @@ def add_item(request):
         obj.save()
         user.cart = obj  # Assign the cart object directly to the user's cart field
         user.save()
-    if(obj.picked_products.filter(id=product_id) is None):
+    if(user.cart.picked_products.filter(id=product_id).exists()==False):
         obj.picked_products.add(products.objects.get(id=product_id))
     obj.quantity += int(quantity)
     obj.save()
@@ -88,19 +88,20 @@ def add_item(request):
 
     
     # Calculate the total price
-    picked_products = obj.picked_products.all()
+    picked_products = obj.picked_products.get(id=product_id)
     total_price = 0
-    for product in picked_products:
-        value_without_comma = product.price.replace(',', '') 
-        value_without_comma = value_without_comma.replace('.00', '')
-        numeric_value = ''.join(filter(str.isdigit, value_without_comma))  
-        price = int(numeric_value) 
-        total_price += price
-    
+    # for product in picked_products:
+    value_without_comma = picked_products.price.replace(',', '') 
+    value_without_comma = value_without_comma.replace('.00', '')
+    numeric_value = ''.join(filter(str.isdigit, value_without_comma))  
+    price = int(numeric_value) 
+    total_price += price
+
     obj.total_price += total_price
     obj.save()
 
     return Response(status=200)
+
 
 
 # def add_item(request):

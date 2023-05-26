@@ -8,4 +8,4 @@ class cart(models.Model):
     quantity=models.IntegerField(default=0)
 
 class CustomUser(AbstractUser):
-    cart=models.OneToOneField(cart, on_delete=models.SET_NULL, null=True, blank=True)
+    cart=models.OneToOneField(cart, on_delete=models.SET_DEFAULT, null=True, blank=True,default=None)
