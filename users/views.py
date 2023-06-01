@@ -102,7 +102,61 @@ def add_item(request):
 
     return Response(status=200)
 
+@api_view(['DELETE'])
+@permission_classes([AllowAny])
+@authentication_classes([TokenAuthentication])
+def delete_all_items(request):
+    User=get_user_model()
+    user = User.objects.get(id=request.user.id)
+    user.cart.delete()
+    return Response(status=200)
+    
 
+#add function that will either increase or decrease count of products
+#add count for each product
+ 
+# @api_view(['PUT'])
+# @permission_classes([AllowAny])
+# @authentication_classes([TokenAuthentication])
+# def change_product_count(request):
+#     # User=get_user_model()
+#     # user = User.objects.get(id=request.user.id)
+#     quantity = request.data.get('quantity')
+#     # product_id = request.data.get('pid')
+
+#     #i should add the count of each product
+#     # if quantity>
+#     # for i in range(quantity):
+
+
+
+
+
+
+@api_view(['DELETE'])
+@permission_classes([AllowAny])
+@authentication_classes([TokenAuthentication])
+def delete_specific_items(request,pid):
+
+    #add deletion using json format. It should have id and quantity or nott
+    
+    User=get_user_model()
+    user = User.objects.get(id=request.user.id)
+
+    user.cart.quantity-=user.cart.picked_products.filter(id=pid).count()
+    value_without_comma = user.cart.picked_products.get(id=pid).price.replace(',', '') 
+    value_without_comma = value_without_comma.replace('.00', '')
+    numeric_value = ''.join(filter(str.isdigit, value_without_comma))  
+    price = int(numeric_value)
+    deleted_price=user.cart.picked_products.filter(id=pid).count()*price
+    user.cart.total_price-=deleted_price
+
+    products_to_remove = products.objects.filter(id=pid)
+
+    for product in products_to_remove:
+        user.cart.picked_products.remove(product)
+    user.cart.save()
+    return Response(status=200)
 
 # def add_item(request):
 #     quantity=request.data.get('quantity')

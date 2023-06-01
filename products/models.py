@@ -10,3 +10,9 @@ class products(models.Model):
     image=models.ImageField(upload_to='images/', default='image_223536416.jpg')
     def __str__(self):
         return self.title
+
+class shopping_products(products):
+    quantity=models.IntegerField(default=0)
+    
+    class Meta:
+        abstract = True

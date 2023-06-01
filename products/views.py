@@ -31,6 +31,19 @@ def list(request, category):
     serializer = productsSerializer(queryset, many=True, context={'request': request})
     # api_root=reverse_lazy('products-detail', request=request)    
     return Response(serializer.data)
+
+@api_view()
+@permission_classes([IsAuthenticatedOrReadOnly])
+def sorted_list(request, category,sort_by):
+    queryset=products.objects.all().filter(category=category)
+    if sort_by=="l2h":
+        queryset=queryset.order_by("price")
+    elif sort_by=="h2l":
+        queryset=queryset.order_by("-price")
+    serializer = productsSerializer(queryset, many=True, context={'request': request})
+    # api_root=reverse_lazy('products-detail', request=request)    
+    return Response(serializer.data)
+
 @api_view()
 @permission_classes([IsAuthenticatedOrReadOnly])
 def single(request, category,id):
