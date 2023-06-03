@@ -159,18 +159,32 @@ def delete_specific_items(request,pid):
 #add function that will either increase or decrease count of products
 #add count for each product
  
-# @api_view(['PUT'])
-# @permission_classes([AllowAny])
-# @authentication_classes([TokenAuthentication])
-# def change_product_count(request):
-#     # User=get_user_model()
-#     # user = User.objects.get(id=request.user.id)
-#     quantity = request.data.get('quantity')
-#     # product_id = request.data.get('pid')
+@api_view(['PUT'])
+@permission_classes([AllowAny])
+@authentication_classes([TokenAuthentication])
+def change_product_count(request):
+    User=get_user_model()
+    user = User.objects.get(id=request.user.id)
+    quantity = request.data.get('quantity')
+    product_id = request.data.get('pid')
 
-#     #i should add the count of each product
-#     # if quantity>
-#     # for i in range(quantity):
+
+    value_without_comma = user.cart.picked_products.get(product_id=product_id).price.replace(',', '') 
+    value_without_comma = value_without_comma.replace('.00', '')
+    numeric_value = ''.join(filter(str.isdigit, value_without_comma))  
+    price = int(numeric_value)
+    obj=user.cart
+    obj.total_price-=shopping_products.objects.get(product_id=product_id).quantity*price#fix
+    obj.quantity-=shopping_products.objects.get(product_id=product_id).quantity
+    obj.save()
+    obj.picked_products.filter(product_id=product_id).update(quantity=quantity)
+    obj.save()
+    total_price=obj.picked_products.get(product_id=product_id).quantity*price
+    obj.total_price+=total_price
+    total_quantity=obj.picked_products.get(product_id=product_id).quantity
+    obj.quantity+=total_quantity
+    obj.save()
+    return Response(status=200)
 
 
 
