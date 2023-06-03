@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import products
+from .models import products, shopping_products
 from rest_framework.reverse import reverse,reverse_lazy
 class productsSerializer(serializers.ModelSerializer):
     # product_url=serializers.HyperlinkedIdentityField(view_name='detail', lookup_field='id')
@@ -12,6 +12,19 @@ class productsSerializer(serializers.ModelSerializer):
         representation = super().to_representation(instance)
         representation['url']=url
         return representation
+    
+class shopping_productsSerializer(serializers.ModelSerializer):
+    # product_url=serializers.HyperlinkedIdentityField(view_name='detail', lookup_field='id')
+    class Meta:
+        model = shopping_products
+        fields = '__all__'
+    # def to_representation(self, instance):
+    #     request = self.context.get('request')
+    #     pid=request.data.get('pid')
+    #     url = reverse('products-detail', kwargs={'id': instance.picked_products.get(id=request.id).product_id, 'category': instance.picked_products.get(id=request.id).category}, request=request)
+    #     representation = super().to_representation(instance)
+    #     representation['url']=url
+    #     return representation    
 # from rest_framework import serializers
 # from .models import products
 # from django.urls import reverse
