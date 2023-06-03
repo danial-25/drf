@@ -2,6 +2,7 @@ from django.shortcuts import render
 
 # Create your views here.
 import re
+from django.shortcuts import get_object_or_404
 from django.contrib.auth import get_user_model
 from rest_framework.permissions import AllowAny
 from rest_framework.views import APIView
@@ -19,9 +20,9 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from .models import cart,CustomUser
 from django.contrib.auth.models import User
-from products.models import products
+from products.models import products,shopping_products
 from products.serializers import productsSerializer
-
+from django.core.exceptions import ObjectDoesNotExist
 
 class UserRegistrationView(APIView):
     permission_classes = [permissions.AllowAny]
@@ -66,7 +67,7 @@ class DataAPIView(APIView):
 @api_view(['POST'])
 @permission_classes([AllowAny])
 @authentication_classes([TokenAuthentication])
-def add_item(request):
+def add_item(request):#fix this function
     quantity = request.data.get('quantity')
     product_id = request.data.get('pid')
     
@@ -75,20 +76,38 @@ def add_item(request):
     
     if user.cart:
         obj=user.cart
+        
     else:
         obj = cart()
         obj.save()
         user.cart = obj  # Assign the cart object directly to the user's cart field
         user.save()
-    if(user.cart.picked_products.filter(id=product_id).exists()==False):
-        obj.picked_products.add(products.objects.get(id=product_id))
+    # if(user.cart.picked_products.exists()==False):
+    #     shopping_product=shopping_products()
+    # else:
+    #     shopping_product=user.cart.picked_products.get(pid=products.objects.get(id=product_id).pid)  #i should use here request id
+    try:
+        shopping_product=user.cart.picked_products.get(pid=products.objects.get(id=product_id).pid)
+    except ObjectDoesNotExist:
+    # Object not found, skip to next line of code
+        shopping_product=shopping_products()
+    if(user.cart.picked_products.filter(id=shopping_product.id).exists()==False):#gotta fix that
+        product=products.objects.get(id=product_id)
+        shopping_product=shopping_products.objects.create(title=product.title, price=product.price, shop=product.shop, category=product.category, pid=product.pid,quantity=quantity,product_id=product_id)
+        obj.picked_products.add(shopping_product)
+        obj.picked_products.get(id=shopping_product.id).quantity+= int(quantity)
+        obj.save()
+    else:
+        temp=obj.picked_products.get(id=shopping_product.id).quantity+ int(quantity)
+        obj.picked_products.filter(id=shopping_product.id).update(quantity=temp)
+        obj.save()
     obj.quantity += int(quantity)
     obj.save()
     
 
     
     # Calculate the total price
-    picked_products = obj.picked_products.get(id=product_id)
+    picked_products = obj.picked_products.get(id=shopping_product.id)
     total_price = 0
     # for product in picked_products:
     value_without_comma = picked_products.price.replace(',', '') 
@@ -111,6 +130,31 @@ def delete_all_items(request):
     user.cart.delete()
     return Response(status=200)
     
+@api_view(['DELETE'])
+@permission_classes([AllowAny])
+@authentication_classes([TokenAuthentication])
+def delete_specific_items(request,pid):
+
+    #add deletion using json format. It should have id and quantity or nott
+    
+    User=get_user_model()
+    user = User.objects.get(id=request.user.id)
+
+    shopping_product=user.cart.picked_products.get(pid=products.objects.get(id=pid).pid)
+    user.cart.quantity-=user.cart.picked_products.get(id=shopping_product.id).quantity
+    value_without_comma = user.cart.picked_products.get(id=shopping_product.id).price.replace(',', '') 
+    value_without_comma = value_without_comma.replace('.00', '')
+    numeric_value = ''.join(filter(str.isdigit, value_without_comma))  
+    price = int(numeric_value)
+    deleted_price=user.cart.picked_products.get(id=shopping_product.id).quantity*price
+    user.cart.total_price-=deleted_price
+
+    # products_to_remove = products.objects.filter(id=pid)
+    products_to_remove = shopping_products.objects.filter(id=shopping_product.id)
+    for product in products_to_remove:
+        user.cart.picked_products.remove(product)
+    user.cart.save()
+    return Response(status=200)
 
 #add function that will either increase or decrease count of products
 #add count for each product
@@ -132,105 +176,3 @@ def delete_all_items(request):
 
 
 
-
-@api_view(['DELETE'])
-@permission_classes([AllowAny])
-@authentication_classes([TokenAuthentication])
-def delete_specific_items(request,pid):
-
-    #add deletion using json format. It should have id and quantity or nott
-    
-    User=get_user_model()
-    user = User.objects.get(id=request.user.id)
-
-    user.cart.quantity-=user.cart.picked_products.filter(id=pid).count()
-    value_without_comma = user.cart.picked_products.get(id=pid).price.replace(',', '') 
-    value_without_comma = value_without_comma.replace('.00', '')
-    numeric_value = ''.join(filter(str.isdigit, value_without_comma))  
-    price = int(numeric_value)
-    deleted_price=user.cart.picked_products.filter(id=pid).count()*price
-    user.cart.total_price-=deleted_price
-
-    products_to_remove = products.objects.filter(id=pid)
-
-    for product in products_to_remove:
-        user.cart.picked_products.remove(product)
-    user.cart.save()
-    return Response(status=200)
-
-# def add_item(request):
-#     quantity=request.data.get('quantity')
-#     product_id=request.data.get('pid')
-    
-#     User=get_user_model()
-#     user = User.objects.get(id=request.user.id)
-#     user.cart.add(cart())
-#     user.cart.save()
-#     product = products.objects.get(id=product_id)
-#     user.cart.picked_products.set([product])#it creates new value, and it should add up to already existing value, also it shouldn't create new object if id is same
-#     user.cart.quantity+=int(quantity)#it creates new value, and it should add up to already existing value
-#     user.cart.save()
-#     user.save()
-#     use=UserSerializer(user)
-#     value_without_comma = product.price.replace(',', '') 
-#     value_without_comma = value_without_comma.replace('.00', '')
-#     numeric_value = ''.join(filter(str.isdigit, value_without_comma))  
-#     price = int(numeric_value) 
-#     total_price = user.cart.total_price + (price * int(quantity))
-#     user.cart.total_price = total_price
-    
-#     user.cart.save()  # Save the cart object
-#     user.save()  # Save the user object
-    
-#     use = UserSerializer(user)
-#     serialized_data = use.data
-    
-#     return Response(serialized_data, status=200)
-# from django.shortcuts import render
-# from rest_framework.permissions import AllowAny
-# from rest_framework.views import APIView
-# from rest_framework.response import Response
-# from .serializers import UserSerializer
-# from django.contrib.auth.models import User
-# from rest_framework.authentication import TokenAuthentication
-# from rest_framework import generics
-# from rest_framework.authtoken.models import Token
-# from django.contrib.auth import authenticate
-# from rest_framework import permissions
-# from rest_framework.decorators import api_view,permission_classes
-# from rest_framework.permissions import IsAuthenticated
-# from rest_framework.views import APIView
-# from rest_framework.response import Response
-
-# class UserRegistrationView(generics.CreateAPIView):
-#     permission_classes = [permissions.IsAuthenticated]
-#     serializer_class=UserSerializer
-#     def post(self, request):
-#         serializer = UserSerializer(data=request.data)
-#         if serializer.is_valid():
-#             serializer.save()
-#             return Response({'message': 'User registered successfully.'}, status=201)
-#         return Response(serializer.errors, status=400)
-
-# @api_view(['POST'])
-# @permission_classes([IsAuthenticated])
-# def user_login(request):
-#     username = request.data.get('User').get('username')
-#     password = request.data.get('User').get('password')
-
-#     user = authenticate(request, username=username, password=password)
-#     if user:
-#         token,_= Token.objects.get_or_create(user=user)
-#         return Response({'token': token.key}, status=200)
-#     return Response({'error': 'Invalid credentials'}, status=401)
-
-# class DataAPIView(APIView):
-#     authentication_classes = [TokenAuthentication]
-#     permission_classes = [permissions.IsAuthenticated]
-
-#     def get(self, request):
-#         if request.auth:
-#             name=request.user.first_name
-#             lastname=request.user.last_name
-#             cart=request.user.cart
-#         return Response({'name': name, 'lastname':lastname, 'cart':cart})

@@ -13,6 +13,4 @@ class products(models.Model):
 
 class shopping_products(products):
     quantity=models.IntegerField(default=0)
-    
-    class Meta:
-        abstract = True
+    product_id=models.CharField(max_length=10,default=None)
